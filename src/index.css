@@ -138,8 +138,47 @@ input[type=number] {
 
 @media print {
   body {
-    background: white !important;
-    color: black !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  nav, header, button, .no-print {
+    display: none !important;
+  }
+
+  .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    color: #0f172a !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-radius: 8px !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+    padding: 8px 10px !important;
+  }
+
+  thead {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+  }
+
+  .text-cyan-300, .text-cyan-400, .text-amber-300, .text-amber-400,
+  .text-emerald-300, .text-emerald-400, .text-purple-300, .text-purple-400,
+  .text-slate-100, .text-slate-200, .text-slate-300 {
+    color: #0f172a !important;
   }
 }
 

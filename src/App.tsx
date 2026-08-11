@@ -373,62 +373,282 @@ export default function App() {
     saveAllData({ docs: updated });
   };
 
-  // Seed entry demo docs
+  // Seed comprehensive intelligent test data covering all custom edge cases & workflow stages
   const handleSeedEntryDemo = () => {
     const t = todayJ();
-    const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-    const sampleImps = importers.length ? importers : DEFAULT_IMPORTERS;
-    const sampleCars = carriers.length ? carriers : DEFAULT_CARRIERS;
-    const sampleGoods = goodsList.length ? goodsList : DEFAULT_GOODS;
-    const sampleBrands = brands.length ? brands : DEFAULT_BRANDS;
+    // 1. Define distinct test file numbers and multi-cottage entry docs
+    const doc1Id = uid();
+    const doc2Id = uid();
+    const doc3Id = uid();
+    const doc4Id = uid();
+    const doc5Id = uid();
 
-    const newDocs: EntryDoc[] = [];
-    for (let i = 0; i < 4; i++) {
-      const cottage = String(rand(1400000, 1409999));
-      if (docs.some((d) => d.cottage === cottage)) continue;
-      const bl = 'SEETEC' + String(rand(10000, 99999));
-      if (docs.some((d) => d.bl === bl)) continue;
-      const file = String(rand(405000, 405999));
-      const importer = sampleImps[rand(0, sampleImps.length - 1)];
-      const carrier = sampleCars[rand(0, sampleCars.length - 1)];
-      const goods = sampleGoods[rand(0, sampleGoods.length - 1)];
-      const brand = sampleBrands[rand(0, sampleBrands.length - 1)];
-      const trailers = rand(2, 8);
-      const pallets = rand(10, 50);
-      const unloaded = rand(0, trailers);
-      const complete = unloaded === trailers;
-      const invoicePaid = complete && Math.random() > 0.3;
-      const receiptNum = invoicePaid ? String(rand(20000, 20999)) : '';
+    const sampleDocs: EntryDoc[] = [
+      // File 405101: Multi-Cottage File (Cottages 1, 2, 3)
+      {
+        id: doc1Id,
+        cottage: '1402234',
+        bl: 'SEETEC05022',
+        file: '405101',
+        importer: 'شرکت بازرگانی آریا تجارت',
+        carrier: 'پارسیان حمل',
+        goods: 'ام دی اف 1830*3800*16',
+        brand: 'کرونوسپان',
+        unloadDate: { jy: t.jy, jm: t.jm, jd: Math.max(1, t.jd - 4) },
+        trailers: 5,
+        unloaded: 5,
+        pallets: 42,
+        invoicePaid: true,
+        receipt: { number: '20581', count: '420' },
+        tasks: { bl: true, arr: true, tali: true },
+        createdAt: Date.now() - 360000000,
+      },
+      {
+        id: doc2Id,
+        cottage: '1402235',
+        bl: 'SEETEC05023',
+        file: '405101', // Same file number for multi-cottage testing!
+        importer: 'شرکت بازرگانی آریا تجارت',
+        carrier: 'پارسیان حمل',
+        goods: 'ام دی اف 1830*3800*16',
+        brand: 'کرونوسپان',
+        unloadDate: { jy: t.jy, jm: t.jm, jd: Math.max(1, t.jd - 3) },
+        trailers: 4,
+        unloaded: 4,
+        pallets: 36,
+        invoicePaid: true,
+        receipt: { number: '20582', count: '360' },
+        tasks: { bl: true, arr: true, tali: true },
+        createdAt: Date.now() - 280000000,
+      },
+      {
+        id: doc3Id,
+        cottage: '1402236',
+        bl: 'SEETEC05024',
+        file: '405101', // Third cottage under same file number!
+        importer: 'شرکت بازرگانی آریا تجارت',
+        carrier: 'پارسیان حمل',
+        goods: 'ام دی اف 1830*3800*16',
+        brand: 'کرونوسپان',
+        unloadDate: { jy: t.jy, jm: t.jm, jd: Math.max(1, t.jd - 1) },
+        trailers: 6,
+        unloaded: 3, // In discharging stage (3 out of 6)
+        pallets: 25,
+        invoicePaid: false,
+        receipt: { number: '', count: '' },
+        tasks: { bl: true, arr: false, tali: false },
+        createdAt: Date.now() - 100000000,
+      },
 
-      newDocs.push({
+      // File 405202: Second File (Single Cottage, Yellow Route)
+      {
+        id: doc4Id,
+        cottage: '1403112',
+        bl: 'SEETEC06119',
+        file: '405202',
+        importer: 'صنایع چوب و فولاد نوین',
+        carrier: 'باربری نوین',
+        goods: 'چسب کاشی',
+        brand: 'پارس چسب',
+        unloadDate: { jy: t.jy, jm: t.jm, jd: Math.max(1, t.jd - 2) },
+        trailers: 6,
+        unloaded: 6,
+        pallets: 28,
+        invoicePaid: true,
+        receipt: { number: '20590', count: '280' },
+        tasks: { bl: true, arr: true, tali: false },
+        createdAt: Date.now() - 180000000,
+      },
+
+      // File 405303: Third File (Newly Arrived)
+      {
+        id: doc5Id,
+        cottage: '1404008',
+        bl: 'SEETEC07200',
+        file: '405303',
+        importer: 'گروه صنعتی پارسیان',
+        carrier: 'دریا طلایی خلیج فارس',
+        goods: 'روکش پی‌وی‌سی',
+        brand: 'ایزوفام',
+        unloadDate: { jy: t.jy, jm: t.jm, jd: t.jd },
+        trailers: 3,
+        unloaded: 1,
+        pallets: 15,
+        invoicePaid: false,
+        receipt: { number: '', count: '' },
+        tasks: { bl: false, arr: false, tali: false },
+        createdAt: Date.now() - 50000000,
+      },
+    ];
+
+    // 2. Consolidation Batch under File 405101
+    const batchId = 'SEETEC05022COMB1001';
+    const sampleBatches: Batch[] = [
+      {
+        id: batchId,
+        goods: 'ام دی اف 1830*3800*16',
+        file: '405101',
+        createdAt: { jy: t.jy, jm: t.jm, jd: Math.max(1, t.jd - 2) },
+        docIds: [doc1Id, doc2Id],
+        finalized: true,
+      },
+    ];
+
+    // 3. Exit Documents covering all exit workflow states
+    const sampleExits: ExitDoc[] = [
+      // Exit Doc 1: Fully closed & exited (Red Route, Lab Tested & Approved, Paid, Gate Exited)
+      {
         id: uid(),
-        cottage,
-        bl,
-        file,
-        importer,
-        carrier,
-        goods,
-        brand,
-        unloadDate: { jy: t.jy, jm: t.jm, jd: Math.min(t.jd, 28) },
-        trailers,
-        unloaded,
-        pallets,
-        invoicePaid,
-        receipt: { number: receiptNum, count: invoicePaid ? String(rand(100, 500)) : '' },
-        tasks: {
-          bl: complete && Math.random() > 0.3,
-          arr: complete && Math.random() > 0.4,
-          tali: complete && Math.random() > 0.5,
+        cottage: '1402234',
+        bl: 'SEETEC05022',
+        file: '405101',
+        unloadDate: t,
+        importer: 'شرکت بازرگانی آریا تجارت',
+        carrier: 'پارسیان حمل',
+        goods: 'ام دی اف 1830*3800*16',
+        brand: 'کرونوسپان',
+        trailers: 9,
+        pallets: 78,
+        batchId: batchId,
+        route: 'red',
+        evaluator: { done: true, comment: 'ارزیابی فیزیکی کالا با موفقیت تایید شد' },
+        jihad: { done: true, comment: 'مجوز جهاد کشاورزی صادر گردید' },
+        lab: {
+          needed: true,
+          sampled: true,
+          sampleDate: t,
+          sent: true,
+          tested: true,
+          comment: 'نتیجه آزمایشگاه: استاندارد و فاقد آلودگی (تایید نهایی)',
+          reusedFrom: null,
+          recordId: 'lab-rec-1',
+          validity: 6,
         },
-        createdAt: Date.now() - rand(0, 10) * 86400000,
-      });
-    }
+        expert: { done: true },
+        gate: { done: true },
+        invoice: { paid: true },
+        createdAt: Date.now() - 36000000,
+      },
 
-    const updated = [...newDocs, ...docs];
-    setDocs(updated);
-    saveAllData({ docs: updated });
-    addToast('۴ سند ورود نمونه تصادفی ثبت شد', 'ok');
+      // Exit Doc 2: Yellow Route, Lab not needed, Pending payment at gate
+      {
+        id: uid(),
+        cottage: '1403112',
+        bl: 'SEETEC06119',
+        file: '405202',
+        unloadDate: t,
+        importer: 'صنایع چوب و فولاد نوین',
+        carrier: 'باربری نوین',
+        goods: 'چسب کاشی',
+        brand: 'پارس چسب',
+        trailers: 6,
+        pallets: 28,
+        batchId: null,
+        route: 'yellow',
+        evaluator: { done: true, comment: 'بررسی اسنادی انجام شد' },
+        jihad: { done: true, comment: 'استعلام سیستم تایید شد' },
+        lab: { needed: false },
+        expert: { done: true },
+        gate: { done: false },
+        invoice: { paid: false },
+        createdAt: Date.now() - 18000000,
+      },
+
+      // Exit Doc 3: Red Route, Lab testing in progress
+      {
+        id: uid(),
+        cottage: '1404008',
+        bl: 'SEETEC07200',
+        file: '405303',
+        unloadDate: t,
+        importer: 'گروه صنعتی پارسیان',
+        carrier: 'دریا طلایی خلیج فارس',
+        goods: 'روکش پی‌وی‌سی',
+        brand: 'ایزوفام',
+        trailers: 3,
+        pallets: 15,
+        batchId: null,
+        route: 'red',
+        evaluator: { done: false, comment: '' },
+        jihad: { done: false, comment: '' },
+        lab: {
+          needed: true,
+          sampled: true,
+          sampleDate: t,
+          sent: true,
+          tested: false,
+          comment: 'نمونه به آزمایشگاه ارسال شده و در دست بررسی است',
+        },
+        expert: { done: false },
+        gate: { done: false },
+        invoice: { paid: false },
+        createdAt: Date.now() - 3600000,
+      },
+    ];
+
+    // 4. Lab Record
+    const sampleLabRecords: LabRecord[] = [
+      {
+        id: 'lab-rec-1',
+        goods: 'ام دی اف 1830*3800*16',
+        brand: 'کرونوسپان',
+        sampleDate: t,
+        validity: 6,
+        comment: 'نتیجه آزمایشگاه: مطابق با استانداردهای گمرک و بهداشت',
+        exitId: sampleExits[0].id,
+        createdAt: Date.now() - 36000000,
+      },
+    ];
+
+    // 5. Update state and dropdown option lists
+    const newImporters = Array.from(
+      new Set([...importers, 'شرکت بازرگانی آریا تجارت', 'صنایع چوب و فولاد نوین', 'گروه صنعتی پارسیان'])
+    );
+    const newCarriers = Array.from(
+      new Set([...carriers, 'پارسیان حمل', 'باربری نوین', 'دریا طلایی خلیج فارس'])
+    );
+    const newGoods = Array.from(
+      new Set([...goodsList, 'ام دی اف 1830*3800*16', 'چسب کاشی', 'روکش پی‌وی‌سی'])
+    );
+    const newBrands = Array.from(
+      new Set([...brands, 'کرونوسپان', 'پارس چسب', 'ایزوفام'])
+    );
+
+    // Merge non-duplicate docs
+    const existingCottages = new Set(docs.map((d) => d.cottage));
+    const docsToAdd = sampleDocs.filter((d) => !existingCottages.has(d.cottage));
+
+    const updatedDocs = [...docsToAdd, ...docs];
+    const updatedBatches = [...sampleBatches, ...batches];
+    const updatedExits = [...sampleExits, ...exits];
+    const updatedLabRecords = [...sampleLabRecords, ...labRecords];
+
+    setDocs(updatedDocs);
+    setBatches(updatedBatches);
+    setExits(updatedExits);
+    setLabRecords(updatedLabRecords);
+
+    setImporters(newImporters);
+    setCarriers(newCarriers);
+    setGoodsList(newGoods);
+    setBrands(newBrands);
+
+    saveAllData({
+      docs: updatedDocs,
+      batches: updatedBatches,
+      exits: updatedExits,
+      labRecords: updatedLabRecords,
+      importers: newImporters,
+      carriers: newCarriers,
+      goodsList: newGoods,
+      brands: newBrands,
+    });
+
+    addToast(
+      'سناریوی جامع تست شامل پرونده‌های چند کوتاژی، مراحل ورود، تجمیع و خروج با موفقیت ثبت شد',
+      'ok'
+    );
   };
 
   // Consolidation Actions
@@ -759,18 +979,19 @@ export default function App() {
             </span>
           </button>
 
-          {/* Section 3: گزارش‌گیری (Disabled) */}
+          {/* Section 3: گزارش‌گیری */}
           <button
-            disabled
-            onClick={() => addToast('بخش گزارش‌گیری بر اساس دستورالعمل جدید به‌زودی فعال خواهد شد', 'info')}
-            className="flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-base shrink-0 transition-all border border-white/5 bg-white/5 text-slate-500 cursor-not-allowed opacity-60 backdrop-blur-md"
-            title="بخش گزارش‌گیری موقتاً غیرفعال است"
+            onClick={() => setMainTab('reports')}
+            className={`flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-base shrink-0 transition-all border ${
+              mainTab === 'reports'
+                ? 'bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/10 border-emerald-400/60 text-white shadow-lg shadow-emerald-500/20 backdrop-blur-xl'
+                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10 backdrop-blur-md'
+            }`}
           >
-            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
+            <BarChart3 className={`w-4 h-4 sm:w-5 sm:h-5 ${mainTab === 'reports' ? 'text-emerald-400' : 'text-slate-400'}`} />
             <span>گزارش‌گیری</span>
-            <span className="flex items-center gap-1 text-[9px] sm:text-[10px] bg-slate-900/80 text-slate-400 border border-slate-700/60 px-1.5 sm:px-2 py-0.5 rounded-full font-normal">
-              <Lock className="w-2.5 h-2.5 text-amber-400" />
-              غیرفعال
+            <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
+              تحلیلی
             </span>
           </button>
         </div>
@@ -1378,20 +1599,17 @@ export default function App() {
             {exitSubTab === 'lab' && <LabRecordsSection records={labRecords} />}
           </div>
         )}
-      </main>
 
-      {/* Floating Action Button (FAB) on Mobile */}
-      <button
-        onClick={() => {
-          setMainTab('entry');
-          setEntrySubTab('docs');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        className="lg:hidden fixed bottom-6 left-6 z-40 bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-black p-4 rounded-full shadow-xl shadow-cyan-500/30 flex items-center justify-center border border-white/20 active:scale-95 transition-all"
-        title="ثبت سند جدید"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+        {/* SECTION 3: REPORTS & ANALYTICS (گزارش‌گیری تحلیلی بر اساس شماره پرونده) */}
+        {mainTab === 'reports' && (
+          <ReportsSection
+            docs={docs}
+            exits={exits}
+            batches={batches}
+            getStageOf={getStageOfDoc}
+          />
+        )}
+      </main>
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />

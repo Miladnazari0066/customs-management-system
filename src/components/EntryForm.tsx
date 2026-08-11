@@ -337,10 +337,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({
             <button
               type="button"
               onClick={onSeedDemo}
-              className="w-full py-2.5 px-4 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm"
+              title="ایجاد داده‌های جامع تست با تمام سناریوها و پرونده‌های چند کوتاژی"
             >
-              <TestTube className="w-3.5 h-3.5" />
-              <span>ثبت ۴ سند ورود نمونه (تست)</span>
+              <TestTube className="w-3.5 h-3.5 text-purple-400" />
+              <span>ثبت داده‌های نمونه هوشمند تست</span>
             </button>
           )}
         </div>

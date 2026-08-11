@@ -13,35 +13,13 @@ const KEYS = {
   INITIALIZED: 'gm_initialized',
 };
 
-export const DEFAULT_IMPORTERS = [
-  'شرکت بازرگانی آریا تجارت',
-  'صنایع فولاد شرق',
-  'گروه صنعتی پارسیان',
-  'تجارت بین‌الملل خلیج',
-];
+export const DEFAULT_IMPORTERS: string[] = [];
 
-export const DEFAULT_CARRIERS = [
-  'پارسیان حمل',
-  'دریا طلایی خلیج فارس',
-  'باربری نوین',
-  'حمل‌ونقل سریع',
-];
+export const DEFAULT_CARRIERS: string[] = [];
 
-export const DEFAULT_GOODS = [
-  'ام دی اف 1830*3800*16',
-  'ام دی اف 1200*2800*16',
-  'روکش پی‌وی‌سی',
-  'چسب کاشی',
-  'لترون 16 میل',
-];
+export const DEFAULT_GOODS: string[] = [];
 
-export const DEFAULT_BRANDS = [
-  'کرونوسپان',
-  'ایزوفام',
-  'پارس چسب',
-  'ملامینه',
-  'وود تک',
-];
+export const DEFAULT_BRANDS: string[] = [];
 
 export function getItem<T>(key: string, fallback: T): T {
   try {
