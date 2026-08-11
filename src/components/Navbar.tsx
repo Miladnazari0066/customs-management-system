@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, PackageCheck, Trash2 } from 'lucide-react';
+import { LogOut, PackageCheck, Trash2, Database, CloudCheck, CloudOff } from 'lucide-react';
 import { toJalali, WDN, JMONTHS, fa, pad2 } from '../utils/jalali';
+import { isSupabaseConfigured } from '../lib/supabase';
+import logoImg from '../assets/images/customs_app_logo_1786469780372.jpg';
 
 interface NavbarProps {
   onLogout: () => void;
   onClearAllData?: () => void;
+  onOpenCloudDb?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onLogout, onClearAllData }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onLogout, onClearAllData, onOpenCloudDb }) => {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
+
+  const isCloud = isSupabaseConfigured();
 
   useEffect(() => {
     const tick = () => {
@@ -32,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onLogout, onClearAllData }) => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 p-0.5 shadow-lg shadow-cyan-500/20 flex items-center justify-center">
               <div className="w-full h-full bg-[#0c0e14] rounded-[10px] flex items-center justify-center text-cyan-400 overflow-hidden">
                 <img 
-                  src="/src/assets/images/customs_app_logo_1786469780372.jpg" 
+                  src={logoImg} 
                   alt="لوگوی گمرک"
                   className="w-full h-full object-cover" 
                   referrerPolicy="no-referrer"
@@ -61,8 +66,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onLogout, onClearAllData }) => {
             <span className="font-lalezar text-xs sm:text-sm text-cyan-400 tracking-wider">{timeStr}</span>
           </div>
 
-          {/* User Chip & Actions */}
+          {/* User Chip & Cloud DB Button & Actions */}
           <div className="flex items-center gap-1.5 sm:gap-3">
+            {onOpenCloudDb && (
+              <button
+                onClick={onOpenCloudDb}
+                className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border transition-all active:scale-95 shadow-md ${
+                  isCloud
+                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300'
+                    : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-300'
+                }`}
+                title="مدیریت و تنظیمات دیتابیس ابری Supabase"
+              >
+                {isCloud ? (
+                  <>
+                    <CloudCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>دیتابیس ابری (متصل)</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudOff className="w-3.5 h-3.5 text-amber-400" />
+                    <span>دیتابیس ابری (آفلاین)</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {onClearAllData && (
               <button
                 onClick={onClearAllData}

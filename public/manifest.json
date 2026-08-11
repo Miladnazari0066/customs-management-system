@@ -4,13 +4,13 @@
   "description": "سامانه جامع مدیریت حمل، تخلیه، آزمایشگاه، تجمیع و خروج کالا در گمرک",
   "icons": [
     {
-      "src": "/src/assets/images/customs_app_logo_1786469780372.jpg",
+      "src": "logo.jpg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/src/assets/images/customs_app_logo_1786469780372.jpg",
+      "src": "logo.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"

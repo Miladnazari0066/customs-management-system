@@ -12,6 +12,7 @@ import { ExitCard } from './components/ExitCard';
 import { LabRecordsSection } from './components/LabRecordsSection';
 import { ReportsSection } from './components/ReportsSection';
 import { JalaliDatePicker } from './components/JalaliDatePicker';
+import { CloudDbSyncModal } from './components/CloudDbSyncModal';
 import {
   EntryDoc,
   Batch,
@@ -34,6 +35,20 @@ import {
   DEFAULT_BRANDS,
 } from './utils/storage';
 import { fa, uid, todayJ, en, j2d, d2j, jMonthLen } from './utils/jalali';
+import { isSupabaseConfigured } from './lib/supabase';
+import {
+  fetchAllDataFromCloud,
+  saveEntryDocCloud,
+  deleteEntryDocCloud,
+  saveBatchCloud,
+  deleteBatchCloud,
+  saveExitDocCloud,
+  deleteExitDocCloud,
+  saveLabRecordCloud,
+  deleteLabRecordCloud,
+  saveLookupOptionsCloud,
+  AllAppData,
+} from './services/db';
 import {
   PackageCheck,
   LogOut,
@@ -59,6 +74,9 @@ export default function App() {
   const [mainTab, setMainTab] = useState<MainTabType>('entry');
   const [entrySubTab, setEntrySubTab] = useState<EntrySubTab>('docs');
   const [exitSubTab, setExitSubTab] = useState<ExitSubTab>('docs');
+
+  // Cloud Sync Modal State
+  const [isCloudDbModalOpen, setIsCloudDbModalOpen] = useState(false);
 
   // Application Data States
   const [docs, setDocs] = useState<EntryDoc[]>([]);
@@ -142,17 +160,60 @@ export default function App() {
     action: () => void;
   }>({ isOpen: false, title: '', text: '', action: () => {} });
 
-  // Load Initial Data on Mount
+  // Load Initial Data on Mount (Cloud Database First, Fallback to localStorage)
   useEffect(() => {
-    const data = loadAllData();
-    setDocs(data.docs);
-    setBatches(data.batches);
-    setExits(data.exits);
-    setLabRecords(data.labRecords);
-    setImporters(data.importers);
-    setCarriers(data.carriers);
-    setGoodsList(data.goodsList);
-    setBrands(data.brands);
+    const initData = async () => {
+      // 1. Load local data first for instant UI response
+      const localData = loadAllData();
+      setDocs(localData.docs);
+      setBatches(localData.batches);
+      setExits(localData.exits);
+      setLabRecords(localData.labRecords);
+      setImporters(localData.importers);
+      setCarriers(localData.carriers);
+      setGoodsList(localData.goodsList);
+      setBrands(localData.brands);
+
+      // 2. If Supabase is configured, fetch latest data from Cloud DB
+      if (isSupabaseConfigured()) {
+        try {
+          const cloudData = await fetchAllDataFromCloud();
+          if (cloudData) {
+            setDocs(cloudData.docs);
+            setBatches(cloudData.batches);
+            setExits(cloudData.exits);
+            setLabRecords(cloudData.labRecords);
+            setImporters(cloudData.importers);
+            setCarriers(cloudData.carriers);
+            setGoodsList(cloudData.goodsList);
+            setBrands(cloudData.brands);
+            // Sync to local cache
+            saveAllData({
+              docs: cloudData.docs,
+              batches: cloudData.batches,
+              exits: cloudData.exits,
+              labRecords: cloudData.labRecords,
+              importers: cloudData.importers,
+              carriers: cloudData.carriers,
+              goodsList: cloudData.goodsList,
+              brands: cloudData.brands,
+            });
+          }
+        } catch (err: any) {
+          if (err?.code === 'PGRST205' || err?.isTableMissing || err?.message?.includes('PGRST205') || err?.message?.includes('جداول دیتابیس')) {
+            console.warn('Supabase tables not found (PGRST205). Database schema needs to be executed in Supabase SQL Editor.');
+            addToast(
+              'جداول دیتابیس ابری در Supabase ساخته نشده‌اند. لطفاً از بخش «دیتابیس ابری»، اسکریپت SQL را کپی و اجرا نمایید.',
+              'err'
+            );
+          } else {
+            console.warn('Could not load initial data from Supabase, falling back to local cache:', err?.message || err);
+          }
+        }
+      }
+    };
+
+    initData();
   }, []);
 
   const addToast = (text: string, type: 'ok' | 'err' | 'info' = 'info') => {
@@ -217,6 +278,11 @@ export default function App() {
       const next = [...importers, name];
       setImporters(next);
       saveAllData({ importers: next });
+      if (isSupabaseConfigured()) {
+        saveLookupOptionsCloud({ importers: next }).catch((err) =>
+          console.error('Failed to sync importers to Supabase:', err)
+        );
+      }
     }
   };
 
@@ -225,6 +291,11 @@ export default function App() {
       const next = [...carriers, name];
       setCarriers(next);
       saveAllData({ carriers: next });
+      if (isSupabaseConfigured()) {
+        saveLookupOptionsCloud({ carriers: next }).catch((err) =>
+          console.error('Failed to sync carriers to Supabase:', err)
+        );
+      }
     }
   };
 
@@ -233,6 +304,11 @@ export default function App() {
       const next = [...goodsList, name];
       setGoodsList(next);
       saveAllData({ goodsList: next });
+      if (isSupabaseConfigured()) {
+        saveLookupOptionsCloud({ goodsList: next }).catch((err) =>
+          console.error('Failed to sync goods to Supabase:', err)
+        );
+      }
     }
   };
 
@@ -241,6 +317,11 @@ export default function App() {
       const next = [...brands, name];
       setBrands(next);
       saveAllData({ brands: next });
+      if (isSupabaseConfigured()) {
+        saveLookupOptionsCloud({ brands: next }).catch((err) =>
+          console.error('Failed to sync brands to Supabase:', err)
+        );
+      }
     }
   };
 
@@ -249,18 +330,22 @@ export default function App() {
     data: Omit<EntryDoc, 'id' | 'createdAt' | 'unloaded' | 'invoicePaid' | 'receipt' | 'tasks'>
   ) => {
     if (editingDoc) {
-      const updated = docs.map((d) =>
-        d.id === editingDoc.id
-          ? {
-              ...d,
-              ...data,
-              unloaded: Math.min(d.unloaded, data.trailers),
-            }
-          : d
-      );
+      const updatedDoc: EntryDoc = {
+        ...editingDoc,
+        ...data,
+        unloaded: Math.min(editingDoc.unloaded, data.trailers),
+      };
+      const updated = docs.map((d) => (d.id === editingDoc.id ? updatedDoc : d));
       setDocs(updated);
       saveAllData({ docs: updated });
       setEditingDoc(null);
+
+      if (isSupabaseConfigured()) {
+        saveEntryDocCloud(updatedDoc).catch((err) =>
+          addToast(`خطا در ذخیره ابری: ${err.message || ''}`, 'err')
+        );
+      }
+
       addToast(`سند کوتاژ ${fa(data.cottage)} بروزرسانی شد`, 'ok');
     } else {
       const newDoc: EntryDoc = {
@@ -275,6 +360,13 @@ export default function App() {
       const updated = [newDoc, ...docs];
       setDocs(updated);
       saveAllData({ docs: updated });
+
+      if (isSupabaseConfigured()) {
+        saveEntryDocCloud(newDoc).catch((err) =>
+          addToast(`خطا در ذخیره ابری: ${err.message || ''}`, 'err')
+        );
+      }
+
       addToast(`سند کوتاژ ${fa(data.cottage)} با موفقیت ثبت شد`, 'ok');
     }
   };
@@ -309,6 +401,13 @@ export default function App() {
         setDocs(updatedDocs);
         setBatches(updatedBatches);
         saveAllData({ docs: updatedDocs, batches: updatedBatches });
+
+        if (isSupabaseConfigured()) {
+          deleteEntryDocCloud(id).catch((err) =>
+            console.error('Failed to delete entry doc from Supabase:', err)
+          );
+        }
+
         setPassModal((prev) => ({ ...prev, isOpen: false }));
         addToast('سند کوتاژ حذف شد', 'info');
       },
@@ -316,24 +415,43 @@ export default function App() {
   };
 
   const handleUpdateUnloaded = (id: string, delta: number) => {
+    let targetDoc: EntryDoc | null = null;
     const updated = docs.map((d) => {
       if (d.id === id) {
         const next = Math.max(0, Math.min(d.trailers, d.unloaded + delta));
-        return { ...d, unloaded: next };
+        targetDoc = { ...d, unloaded: next };
+        return targetDoc;
       }
       return d;
     });
     setDocs(updated);
     saveAllData({ docs: updated });
+
+    if (targetDoc && isSupabaseConfigured()) {
+      saveEntryDocCloud(targetDoc).catch((err) =>
+        console.error('Failed to update unloaded in Supabase:', err)
+      );
+    }
   };
 
   const handleToggleInvoice = (id: string, paid: boolean) => {
+    let targetDoc: EntryDoc | null = null;
     const updated = docs.map((d) => {
-      if (d.id === id) return { ...d, invoicePaid: paid };
+      if (d.id === id) {
+        targetDoc = { ...d, invoicePaid: paid };
+        return targetDoc;
+      }
       return d;
     });
     setDocs(updated);
     saveAllData({ docs: updated });
+
+    if (targetDoc && isSupabaseConfigured()) {
+      saveEntryDocCloud(targetDoc).catch((err) =>
+        console.error('Failed to update invoice in Supabase:', err)
+      );
+    }
+
     addToast(
       paid
         ? 'پرداخت صورت‌حساب ثبت شد — شماره قبض انبار فعال گردید'
@@ -349,28 +467,44 @@ export default function App() {
       return;
     }
 
+    let targetDoc: EntryDoc | null = null;
     const updated = docs.map((d) => {
       if (d.id === id) {
-        return { ...d, receipt: { number, count } };
+        targetDoc = { ...d, receipt: { number, count } };
+        return targetDoc;
       }
       return d;
     });
     setDocs(updated);
     saveAllData({ docs: updated });
+
+    if (targetDoc && isSupabaseConfigured()) {
+      saveEntryDocCloud(targetDoc).catch((err) =>
+        console.error('Failed to update receipt in Supabase:', err)
+      );
+    }
   };
 
   const handleToggleTask = (id: string, taskKey: 'bl' | 'arr' | 'tali') => {
+    let targetDoc: EntryDoc | null = null;
     const updated = docs.map((d) => {
       if (d.id === id) {
-        return {
+        targetDoc = {
           ...d,
           tasks: { ...d.tasks, [taskKey]: !d.tasks[taskKey] },
         };
+        return targetDoc;
       }
       return d;
     });
     setDocs(updated);
     saveAllData({ docs: updated });
+
+    if (targetDoc && isSupabaseConfigured()) {
+      saveEntryDocCloud(targetDoc).catch((err) =>
+        console.error('Failed to update task in Supabase:', err)
+      );
+    }
   };
 
   // Seed comprehensive intelligent test data covering all custom edge cases & workflow stages
@@ -548,7 +682,17 @@ export default function App() {
         route: 'yellow',
         evaluator: { done: true, comment: 'بررسی اسنادی انجام شد' },
         jihad: { done: true, comment: 'استعلام سیستم تایید شد' },
-        lab: { needed: false },
+        lab: {
+          needed: false,
+          sampled: false,
+          sampleDate: null,
+          sent: false,
+          tested: false,
+          comment: '',
+          reusedFrom: null,
+          recordId: null,
+          validity: 6,
+        },
         expert: { done: true },
         gate: { done: false },
         invoice: { paid: false },
@@ -579,6 +723,9 @@ export default function App() {
           sent: true,
           tested: false,
           comment: 'نمونه به آزمایشگاه ارسال شده و در دست بررسی است',
+          reusedFrom: null,
+          recordId: null,
+          validity: 6,
         },
         expert: { done: false },
         gate: { done: false },
@@ -669,6 +816,13 @@ export default function App() {
     const updatedBatches = [...batches, newBatch];
     setBatches(updatedBatches);
     saveAllData({ batches: updatedBatches });
+
+    if (isSupabaseConfigured()) {
+      saveBatchCloud(newBatch).catch((err) =>
+        console.error('Failed to save batch to Supabase:', err)
+      );
+    }
+
     addToast(`تجمیع ${fa(batchId)} با ${fa(docIds.length)} سند ثبت شد`, 'ok');
   };
 
@@ -678,9 +832,23 @@ export default function App() {
       title: 'نهایی کردن تجمیع',
       text: 'پس از نهایی شدن، همه اسناد این تجمیع در وضعیت «آماده خروج» قرار می‌گیرند و قابل خروج می‌شوند.',
       action: () => {
-        const updated = batches.map((b) => (b.id === batchId ? { ...b, finalized: true } : b));
+        let updatedBatch: Batch | null = null;
+        const updated = batches.map((b) => {
+          if (b.id === batchId) {
+            updatedBatch = { ...b, finalized: true };
+            return updatedBatch;
+          }
+          return b;
+        });
         setBatches(updated);
         saveAllData({ batches: updated });
+
+        if (updatedBatch && isSupabaseConfigured()) {
+          saveBatchCloud(updatedBatch).catch((err) =>
+            console.error('Failed to finalize batch in Supabase:', err)
+          );
+        }
+
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         addToast(`تجمیع ${fa(batchId)} نهایی شد`, 'ok');
       },
@@ -696,6 +864,13 @@ export default function App() {
         const updated = batches.filter((b) => b.id !== batchId);
         setBatches(updated);
         saveAllData({ batches: updated });
+
+        if (isSupabaseConfigured()) {
+          deleteBatchCloud(batchId).catch((err) =>
+            console.error('Failed to delete batch from Supabase:', err)
+          );
+        }
+
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         addToast('تجمیع لغو شد', 'info');
       },
@@ -707,17 +882,21 @@ export default function App() {
     data: Omit<ExitDoc, 'id' | 'createdAt' | 'route' | 'evaluator' | 'jihad' | 'lab' | 'expert' | 'gate' | 'invoice'>
   ) => {
     if (editingExitDoc) {
-      const updated = exits.map((x) =>
-        x.id === editingExitDoc.id
-          ? {
-              ...x,
-              ...data,
-            }
-          : x
-      );
+      const updatedExitDoc: ExitDoc = {
+        ...editingExitDoc,
+        ...data,
+      };
+      const updated = exits.map((x) => (x.id === editingExitDoc.id ? updatedExitDoc : x));
       setExits(updated);
       saveAllData({ exits: updated });
       setEditingExitDoc(null);
+
+      if (isSupabaseConfigured()) {
+        saveExitDocCloud(updatedExitDoc).catch((err) =>
+          addToast(`خطا در ذخیره ابری خروج: ${err.message || ''}`, 'err')
+        );
+      }
+
       addToast('سند خروج بروزرسانی شد', 'ok');
     } else {
       const newExit: ExitDoc = {
@@ -745,6 +924,13 @@ export default function App() {
       const updated = [newExit, ...exits];
       setExits(updated);
       saveAllData({ exits: updated });
+
+      if (isSupabaseConfigured()) {
+        saveExitDocCloud(newExit).catch((err) =>
+          addToast(`خطا در ذخیره ابری خروج: ${err.message || ''}`, 'err')
+        );
+      }
+
       addToast('سند خروج با موفقیت ثبت شد', 'ok');
     }
   };
@@ -769,6 +955,13 @@ export default function App() {
         const updated = exits.filter((x) => x.id !== id);
         setExits(updated);
         saveAllData({ exits: updated });
+
+        if (isSupabaseConfigured()) {
+          deleteExitDocCloud(id).catch((err) =>
+            console.error('Failed to delete exit doc from Supabase:', err)
+          );
+        }
+
         setPassModal((prev) => ({ ...prev, isOpen: false }));
         addToast('سند خروج حذف شد', 'info');
       },
@@ -779,12 +972,25 @@ export default function App() {
     const updated = exits.map((x) => (x.id === updatedDoc.id ? updatedDoc : x));
     setExits(updated);
     saveAllData({ exits: updated });
+
+    if (isSupabaseConfigured()) {
+      saveExitDocCloud(updatedDoc).catch((err) =>
+        console.error('Failed to update exit doc in Supabase:', err)
+      );
+    }
   };
 
   const handleAddLabRecord = (rec: LabRecord) => {
     const updated = [...labRecords, rec];
     setLabRecords(updated);
     saveAllData({ labRecords: updated });
+
+    if (isSupabaseConfigured()) {
+      saveLabRecordCloud(rec).catch((err) =>
+        console.error('Failed to save lab record in Supabase:', err)
+      );
+    }
+
     addToast('سابقه آزمایشگاه جدید ذخیره شد', 'ok');
   };
 
@@ -941,7 +1147,11 @@ export default function App() {
 
       {/* Top Bar */}
       <div className="relative z-10">
-        <Navbar onLogout={handleLogout} onClearAllData={handleClearAllData} />
+        <Navbar
+          onLogout={handleLogout}
+          onClearAllData={handleClearAllData}
+          onOpenCloudDb={() => setIsCloudDbModalOpen(true)}
+        />
       </div>
 
       {/* Tabs Navigation (3 Main Sections) */}
@@ -1629,6 +1839,37 @@ export default function App() {
         text={confirmModal.text}
         onConfirm={confirmModal.action}
         onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Cloud Database Sync Modal */}
+      <CloudDbSyncModal
+        isOpen={isCloudDbModalOpen}
+        onClose={() => setIsCloudDbModalOpen(false)}
+        localData={{
+          docs: docs || [],
+          batches: batches || [],
+          exits: exits || [],
+          labRecords: labRecords || [],
+          importers: importers || [],
+          carriers: carriers || [],
+          goodsList: goodsList || [],
+          brands: brands || [],
+        }}
+        onSyncComplete={(cloudData) => {
+          if (cloudData) {
+            setDocs(cloudData.docs || []);
+            setBatches(cloudData.batches || []);
+            setExits(cloudData.exits || []);
+            setLabRecords(cloudData.labRecords || []);
+            setImporters(cloudData.importers || []);
+            setCarriers(cloudData.carriers || []);
+            setGoodsList(cloudData.goodsList || []);
+            setBrands(cloudData.brands || []);
+            saveAllData(cloudData);
+            addToast('داده‌ها با پایگاه داده ابری همگام‌سازی شدند', 'ok');
+          }
+        }}
+        addToast={addToast}
       />
     </div>
   );
