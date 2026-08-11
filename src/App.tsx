@@ -38,6 +38,7 @@ import { fa, uid, todayJ, en, j2d, d2j, jMonthLen } from './utils/jalali';
 import { isSupabaseConfigured } from './lib/supabase';
 import {
   fetchAllDataFromCloud,
+  migrateLocalDataToCloud,
   saveEntryDocCloud,
   deleteEntryDocCloud,
   saveBatchCloud,
@@ -91,6 +92,42 @@ export default function App() {
   // Editing States
   const [editingDoc, setEditingDoc] = useState<EntryDoc | null>(null);
   const [editingExitDoc, setEditingExitDoc] = useState<ExitDoc | null>(null);
+
+  // Cloud Auto Sync State
+  const [lastCloudSyncTime, setLastCloudSyncTime] = useState<Date | null>(null);
+  const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+  // Silent background auto-save to Supabase every 2 seconds
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const interval = setInterval(() => {
+      setIsCloudSyncing(true);
+      const currentAppData: AllAppData = {
+        docs,
+        batches,
+        exits,
+        labRecords,
+        importers,
+        carriers,
+        goodsList,
+        brands,
+      };
+      migrateLocalDataToCloud(currentAppData)
+        .then(() => {
+          setLastCloudSyncTime(new Date());
+        })
+        .catch(() => {
+          // Silent background sync failure, do not interrupt user
+        })
+        .finally(() => {
+          setTimeout(() => setIsCloudSyncing(false), 600);
+        });
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [docs, batches, exits, labRecords, importers, carriers, goodsList, brands]);
 
   // Search & Filter (Entry)
   const [entrySearch, setEntrySearch] = useState('');
@@ -239,8 +276,13 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    setIsLoggingOut(true);
+  };
+
+  const handleLogoutComplete = () => {
     sessionStorage.removeItem('gm_auth');
     setIsAuthenticated(false);
+    setIsLoggingOut(false);
   };
 
   const handleClearAllData = () => {
@@ -322,6 +364,51 @@ export default function App() {
           console.error('Failed to sync brands to Supabase:', err)
         );
       }
+    }
+  };
+
+  // Option Deletions
+  const handleDeleteImporter = (name: string) => {
+    const next = importers.filter((item) => item !== name);
+    setImporters(next);
+    saveAllData({ importers: next });
+    if (isSupabaseConfigured()) {
+      saveLookupOptionsCloud({ importers: next }).catch((err) =>
+        console.error('Failed to sync importers to Supabase:', err)
+      );
+    }
+  };
+
+  const handleDeleteCarrier = (name: string) => {
+    const next = carriers.filter((item) => item !== name);
+    setCarriers(next);
+    saveAllData({ carriers: next });
+    if (isSupabaseConfigured()) {
+      saveLookupOptionsCloud({ carriers: next }).catch((err) =>
+        console.error('Failed to sync carriers to Supabase:', err)
+      );
+    }
+  };
+
+  const handleDeleteGoods = (name: string) => {
+    const next = goodsList.filter((item) => item !== name);
+    setGoodsList(next);
+    saveAllData({ goodsList: next });
+    if (isSupabaseConfigured()) {
+      saveLookupOptionsCloud({ goodsList: next }).catch((err) =>
+        console.error('Failed to sync goods to Supabase:', err)
+      );
+    }
+  };
+
+  const handleDeleteBrand = (name: string) => {
+    const next = brands.filter((item) => item !== name);
+    setBrands(next);
+    saveAllData({ brands: next });
+    if (isSupabaseConfigured()) {
+      saveLookupOptionsCloud({ brands: next }).catch((err) =>
+        console.error('Failed to sync brands to Supabase:', err)
+      );
     }
   };
 
@@ -1133,9 +1220,15 @@ export default function App() {
       ].some((val) => en(String(val || '').toLowerCase()).includes(q));
     });
 
-  // Render Login Gate if not authenticated
-  if (!isAuthenticated) {
-    return <LoginGate onSuccess={handleLoginSuccess} />;
+  // Render Login Gate if not authenticated or during logout animation
+  if (!isAuthenticated || isLoggingOut) {
+    return (
+      <LoginGate
+        onSuccess={handleLoginSuccess}
+        isLoggingOut={isLoggingOut}
+        onLogoutComplete={handleLogoutComplete}
+      />
+    );
   }
 
   return (
@@ -1149,8 +1242,9 @@ export default function App() {
       <div className="relative z-10">
         <Navbar
           onLogout={handleLogout}
-          onClearAllData={handleClearAllData}
           onOpenCloudDb={() => setIsCloudDbModalOpen(true)}
+          lastCloudSyncTime={lastCloudSyncTime}
+          isCloudSyncing={isCloudSyncing}
         />
       </div>
 
@@ -1355,7 +1449,6 @@ export default function App() {
                       editingDoc={editingDoc}
                       onSubmit={handleCreateOrUpdateEntryDoc}
                       onCancelEdit={() => setEditingDoc(null)}
-                      onSeedDemo={handleSeedEntryDemo}
                       importers={importers}
                       carriers={carriers}
                       goodsList={goodsList}
@@ -1364,6 +1457,10 @@ export default function App() {
                       onAddCarrier={handleAddCarrier}
                       onAddGoods={handleAddGoods}
                       onAddBrand={handleAddBrand}
+                      onDeleteImporter={handleDeleteImporter}
+                      onDeleteCarrier={handleDeleteCarrier}
+                      onDeleteGoods={handleDeleteGoods}
+                      onDeleteBrand={handleDeleteBrand}
                       existingDocs={docs}
                     />
                   </div>
@@ -1614,7 +1711,6 @@ export default function App() {
                       batches={batches}
                       onSubmit={handleCreateOrUpdateExitDoc}
                       onCancelEdit={() => setEditingExitDoc(null)}
-                      onSeedDemo={handleSeedExitDemo}
                       importers={importers}
                       carriers={carriers}
                       goodsList={goodsList}
@@ -1623,6 +1719,10 @@ export default function App() {
                       onAddCarrier={handleAddCarrier}
                       onAddGoods={handleAddGoods}
                       onAddBrand={handleAddBrand}
+                      onDeleteImporter={handleDeleteImporter}
+                      onDeleteCarrier={handleDeleteCarrier}
+                      onDeleteGoods={handleDeleteGoods}
+                      onDeleteBrand={handleDeleteBrand}
                       existingExits={exits}
                     />
                   </div>
@@ -1845,6 +1945,7 @@ export default function App() {
       <CloudDbSyncModal
         isOpen={isCloudDbModalOpen}
         onClose={() => setIsCloudDbModalOpen(false)}
+        lastCloudSyncTime={lastCloudSyncTime}
         localData={{
           docs: docs || [],
           batches: batches || [],

@@ -9,7 +9,7 @@ interface EntryFormProps {
   editingDoc: EntryDoc | null;
   onSubmit: (data: Omit<EntryDoc, 'id' | 'createdAt' | 'unloaded' | 'invoicePaid' | 'receipt' | 'tasks'>) => void;
   onCancelEdit: () => void;
-  onSeedDemo: () => void;
+  onSeedDemo?: () => void;
   importers: string[];
   carriers: string[];
   goodsList: string[];
@@ -18,6 +18,10 @@ interface EntryFormProps {
   onAddCarrier: (name: string) => void;
   onAddGoods: (name: string) => void;
   onAddBrand: (name: string) => void;
+  onDeleteImporter?: (name: string) => void;
+  onDeleteCarrier?: (name: string) => void;
+  onDeleteGoods?: (name: string) => void;
+  onDeleteBrand?: (name: string) => void;
   existingDocs: EntryDoc[];
 }
 
@@ -34,6 +38,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({
   onAddCarrier,
   onAddGoods,
   onAddBrand,
+  onDeleteImporter,
+  onDeleteCarrier,
+  onDeleteGoods,
+  onDeleteBrand,
   existingDocs,
 }) => {
   const [cottage, setCottage] = useState('');
@@ -246,6 +254,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           onChange={setImporter}
           options={importers}
           onAddNew={onAddImporter}
+          onDeleteOption={onDeleteImporter}
           placeholder="— انتخاب واردکننده —"
           error={errors.importer}
         />
@@ -257,6 +266,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           onChange={setCarrier}
           options={carriers}
           onAddNew={onAddCarrier}
+          onDeleteOption={onDeleteCarrier}
           placeholder="— انتخاب شرکت حمل —"
           error={errors.carrier}
         />
@@ -268,6 +278,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           onChange={setGoods}
           options={goodsList}
           onAddNew={onAddGoods}
+          onDeleteOption={onDeleteGoods}
           placeholder="— انتخاب نوع کالا —"
           error={errors.goods}
         />
@@ -278,6 +289,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           onChange={setBrand}
           options={brands}
           onAddNew={onAddBrand}
+          onDeleteOption={onDeleteBrand}
           placeholder="— انتخاب برند کالا —"
         />
 
@@ -330,18 +342,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({
               className="w-full py-2 px-4 rounded-xl border border-white/10 text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors text-xs"
             >
               انصراف از ویرایش
-            </button>
-          )}
-
-          {!editingDoc && (
-            <button
-              type="button"
-              onClick={onSeedDemo}
-              className="w-full py-2.5 px-4 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm"
-              title="ایجاد داده‌های جامع تست با تمام سناریوها و پرونده‌های چند کوتاژی"
-            >
-              <TestTube className="w-3.5 h-3.5 text-purple-400" />
-              <span>ثبت داده‌های نمونه هوشمند تست</span>
             </button>
           )}
         </div>

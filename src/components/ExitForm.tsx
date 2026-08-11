@@ -10,7 +10,7 @@ interface ExitFormProps {
   batches: Batch[];
   onSubmit: (data: Omit<ExitDoc, 'id' | 'createdAt' | 'route' | 'evaluator' | 'jihad' | 'lab' | 'expert' | 'gate' | 'invoice'>) => void;
   onCancelEdit: () => void;
-  onSeedDemo: () => void;
+  onSeedDemo?: () => void;
   importers: string[];
   carriers: string[];
   goodsList: string[];
@@ -19,6 +19,10 @@ interface ExitFormProps {
   onAddCarrier: (name: string) => void;
   onAddGoods: (name: string) => void;
   onAddBrand: (name: string) => void;
+  onDeleteImporter?: (name: string) => void;
+  onDeleteCarrier?: (name: string) => void;
+  onDeleteGoods?: (name: string) => void;
+  onDeleteBrand?: (name: string) => void;
   existingExits: ExitDoc[];
 }
 
@@ -36,6 +40,10 @@ export const ExitForm: React.FC<ExitFormProps> = ({
   onAddCarrier,
   onAddGoods,
   onAddBrand,
+  onDeleteImporter,
+  onDeleteCarrier,
+  onDeleteGoods,
+  onDeleteBrand,
   existingExits,
 }) => {
   const [cottage, setCottage] = useState('');
@@ -262,6 +270,7 @@ export const ExitForm: React.FC<ExitFormProps> = ({
           onChange={setImporter}
           options={importers}
           onAddNew={onAddImporter}
+          onDeleteOption={onDeleteImporter}
           placeholder="— انتخاب واردکننده —"
           error={errors.importer}
         />
@@ -273,6 +282,7 @@ export const ExitForm: React.FC<ExitFormProps> = ({
           onChange={setCarrier}
           options={carriers}
           onAddNew={onAddCarrier}
+          onDeleteOption={onDeleteCarrier}
           placeholder="— انتخاب شرکت حمل —"
           error={errors.carrier}
         />
@@ -284,6 +294,7 @@ export const ExitForm: React.FC<ExitFormProps> = ({
           onChange={setGoods}
           options={goodsList}
           onAddNew={onAddGoods}
+          onDeleteOption={onDeleteGoods}
           placeholder="— انتخاب نوع کالا —"
           error={errors.goods}
         />
@@ -294,6 +305,7 @@ export const ExitForm: React.FC<ExitFormProps> = ({
           onChange={setBrand}
           options={brands}
           onAddNew={onAddBrand}
+          onDeleteOption={onDeleteBrand}
           placeholder="— انتخاب برند کالا —"
         />
 
@@ -343,17 +355,6 @@ export const ExitForm: React.FC<ExitFormProps> = ({
               className="w-full py-2 px-4 rounded-xl border border-white/10 text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors text-xs"
             >
               انصراف از ویرایش
-            </button>
-          )}
-
-          {!editingDoc && (
-            <button
-              type="button"
-              onClick={onSeedDemo}
-              className="w-full py-2.5 px-4 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 font-bold text-xs transition-colors flex items-center justify-center gap-2"
-            >
-              <TestTube className="w-3.5 h-3.5" />
-              <span>ثبت ۵ سند خروج نمونه (تست)</span>
             </button>
           )}
         </div>

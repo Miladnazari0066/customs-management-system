@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, PackageCheck, Trash2, Database, CloudCheck, CloudOff } from 'lucide-react';
+import { LogOut, PackageCheck, CloudCheck, CloudOff, Cloud, RefreshCw } from 'lucide-react';
 import { toJalali, WDN, JMONTHS, fa, pad2 } from '../utils/jalali';
 import { isSupabaseConfigured } from '../lib/supabase';
 import logoImg from '../assets/images/customs_app_logo_1786469780372.jpg';
@@ -8,9 +8,16 @@ interface NavbarProps {
   onLogout: () => void;
   onClearAllData?: () => void;
   onOpenCloudDb?: () => void;
+  lastCloudSyncTime?: Date | null;
+  isCloudSyncing?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onLogout, onClearAllData, onOpenCloudDb }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onLogout,
+  onOpenCloudDb,
+  lastCloudSyncTime,
+  isCloudSyncing = false,
+}) => {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
 
@@ -66,46 +73,49 @@ export const Navbar: React.FC<NavbarProps> = ({ onLogout, onClearAllData, onOpen
             <span className="font-lalezar text-xs sm:text-sm text-cyan-400 tracking-wider">{timeStr}</span>
           </div>
 
-          {/* User Chip & Cloud DB Button & Actions */}
+          {/* User Chip & Compact Cloud DB Status Indicator */}
           <div className="flex items-center gap-1.5 sm:gap-3">
             {onOpenCloudDb && (
               <button
                 onClick={onOpenCloudDb}
-                className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border transition-all active:scale-95 shadow-md ${
-                  isCloud
-                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300'
-                    : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-300'
+                className={`flex items-center justify-center w-8 h-8 rounded-full border transition-all active:scale-95 shadow-md ${
+                  !isCloud
+                    ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
+                    : isCloudSyncing
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.6)] animate-pulse'
+                    : 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.2)]'
                 }`}
-                title="مدیریت و تنظیمات دیتابیس ابری Supabase"
+                title={
+                  !isCloud
+                    ? 'دیتابیس ابری آفلاین | کلیک کنید برای تنظیم و اتصال'
+                    : isCloudSyncing
+                    ? 'در حال همگام‌سازی و ذخیره‌سازی خودکار داده‌ها در دیتابیس ابری...'
+                    : `دیتابیس ابری متصل | ذخیره‌سازی خودکار | آخرین ذخیره: ${
+                        lastCloudSyncTime
+                          ? fa(
+                              pad2(lastCloudSyncTime.getHours()) +
+                                ':' +
+                                pad2(lastCloudSyncTime.getMinutes()) +
+                                ':' +
+                                pad2(lastCloudSyncTime.getSeconds())
+                            )
+                          : 'لحظاتی پیش'
+                      }`
+                }
               >
-                {isCloud ? (
-                  <>
-                    <CloudCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>دیتابیس ابری (متصل)</span>
-                  </>
+                {!isCloud ? (
+                  <CloudOff className="w-4 h-4 text-rose-400 shrink-0" />
+                ) : isCloudSyncing ? (
+                  <RefreshCw className="w-3.5 h-3.5 text-amber-300 animate-spin shrink-0" />
                 ) : (
-                  <>
-                    <CloudOff className="w-3.5 h-3.5 text-amber-400" />
-                    <span>دیتابیس ابری (آفلاین)</span>
-                  </>
+                  <CloudCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 )}
-              </button>
-            )}
-
-            {onClearAllData && (
-              <button
-                onClick={onClearAllData}
-                className="hidden md:flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-amber-300 hover:text-rose-300 bg-amber-500/10 hover:bg-rose-500/20 border border-amber-500/30 hover:border-rose-500/40 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full transition-all backdrop-blur-md active:scale-95"
-                title="حذف تمام اسناد تستی ایجادشده"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span className="inline">حذف اسناد تستی</span>
               </button>
             )}
 
             <div className="hidden lg:flex items-center gap-2 text-xs text-slate-300 bg-white/5 backdrop-blur-md border border-white/10 px-3.5 py-2 rounded-full">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] animate-pulse" />
-              <span>اپراتور پایانه</span>
+              <span>پنل مدیریت کالا در گمرک</span>
             </div>
 
             <button
