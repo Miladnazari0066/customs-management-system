@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg0: #0c0e14;
+    --panel: rgba(255, 255, 255, 0.05);
+    --panel2: rgba(255, 255, 255, 0.08);
+    --panel3: rgba(15, 23, 42, 0.4);
+    --line: rgba(255, 255, 255, 0.1);
+    --line2: rgba(255, 255, 255, 0.2);
+    --ink: #f1f5f9;
+    --dim: #94a3b8;
+    --faint: #64748b;
+    --amber: #f59e0b;
+    --orange: #fb923c;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --teal: #22d3ee;
+    --cyan: #38bdf8;
+    --red: #f43f5e;
+    --yellow: #eab308;
+    --purple: #c084fc;
+  }
+
+  body {
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    background-color: #0c0e14;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-lalezar {
+    font-family: 'Lalezar', cursive;
+  }
+}
+
+/* Glassmorphism custom utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-subtle {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: #38bdf8;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(12, 14, 20, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Ambient floating orb animations */
+@keyframes float1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(30px, -20px) scale(1.08); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-25px, 25px) scale(0.95); }
+}
+
+.animate-float-1 {
+  animation: float1 18s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float2 22s ease-in-out infinite;
+}
+
+/* Conveyor animation with frosted glowing effect */
+@keyframes conv {
+  to {
+    background-position: 34px 0;
+  }
+}
+
+.animate-conveyor {
+  background: repeating-linear-gradient(-45deg, rgba(56,189,248,0.7) 0 12px, rgba(12,14,20,0.8) 12px 24px);
+  animation: conv 3.2s linear infinite;
+}
+
+/* Shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.45s ease-in-out;
+}
+
+/* Hide number input spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+

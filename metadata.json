@@ -1,0 +1,6 @@
+{
+  "name": "پایانه گمرک - سامانه مدیریت ورود و خروج کالا",
+  "description": "سامانه جامع و هوشمند مدیریت اسناد گمرکی، تخلیه، تجمیع، تشریفات خروج و سوابق آزمایشگاهی در پایانه کالا",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
